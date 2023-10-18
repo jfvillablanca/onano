@@ -29,7 +29,6 @@ impl Terminal {
             _stdout: stdout().into_raw_mode()?,
         })
     }
-
     #[must_use]
     pub fn size(&self) -> &Size {
         &self.size

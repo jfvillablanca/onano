@@ -1,10 +1,14 @@
 #![warn(clippy::all, clippy::pedantic)]
+mod document;
 mod editor;
-use editor::Editor;
-
+mod row;
 mod terminal;
+
+pub use document::Document;
+use editor::Editor;
+pub use row::Row;
 pub use terminal::Terminal;
 
 fn main() {
-    Editor::new().run();
+    Editor::default().run();
 }
