@@ -14,6 +14,7 @@ pub struct Editor {
     should_quit: bool,
     terminal: Terminal,
     cursor_position: Position,
+    offset: Position,
     document: Document,
 }
 
@@ -31,6 +32,7 @@ impl Editor {
             should_quit: false,
             terminal: Terminal::new().expect("Failed to initialize terminal"),
             cursor_position: Position::default(),
+            offset: Position::default(),
             document,
         }
     }
@@ -49,9 +51,98 @@ impl Editor {
         }
     }
 
+    fn draw_welcome_message(&self) {
+        let mut welcome_message = format!("Onano editor -- version {VERSION}");
+        let width = self.terminal.size().width as usize;
+        let padding = width.saturating_sub(welcome_message.len()) / 2;
+        let spaces = " ".repeat(padding.saturating_sub(1));
+
+        welcome_message = format!("~{spaces}{welcome_message}");
+        welcome_message.truncate(width);
+
+        println!("{welcome_message}\r");
+    }
+
+    pub fn draw_row(&self, row: &Row) {
+        let width = self.terminal.size().width as usize;
+        let start = self.offset.x;
+        let end = self.offset.x + width;
+        let row = row.render(start, end);
+        println!("{row}\r");
+    }
+
+    fn draw_rows(&self) {
+        let height = self.terminal.size().height;
+        for terminal_row in 0..height - 1 {
+            Terminal::clear_current_line();
+            if let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
+                self.draw_row(row);
+            } else if self.document.is_empty() && terminal_row == height / 3 {
+                self.draw_welcome_message();
+            } else {
+                println!("~\r");
+            }
+        }
+    }
+
+    fn refresh_screen(&self) -> Result<(), io::Error> {
+        Terminal::cursor_hide();
+        Terminal::cursor_position(&Position::default());
+        if self.should_quit {
+            Terminal::clear_screen();
+            println!("Goodbye.\r");
+        } else {
+            self.draw_rows();
+            Terminal::cursor_position(&Position {
+                x: self.cursor_position.x.saturating_sub(self.offset.x),
+                y: self.cursor_position.y.saturating_sub(self.offset.y),
+            });
+        }
+        Terminal::cursor_show();
+        Terminal::flush()
+    }
+
+    fn process_keypress(&mut self) -> Result<(), io::Error> {
+        let pressed_key = Terminal::read_key()?;
+        match pressed_key {
+            Key::Ctrl('q') => self.should_quit = true,
+            Key::Up
+            | Key::Down
+            | Key::Left
+            | Key::Right
+            | Key::PageUp
+            | Key::PageDown
+            | Key::End
+            | Key::Home => self.move_cursor(pressed_key),
+            _ => (),
+        }
+        self.scroll();
+        Ok(())
+    }
+
+    fn scroll(&mut self) {
+        let Position { x, y } = self.cursor_position;
+        let width = self.terminal.size().width as usize;
+        let height = self.terminal.size().height as usize;
+
+        let offset = &mut self.offset;
+
+        if y < offset.y {
+            offset.y = y;
+        } else if y >= offset.y.saturating_add(height) {
+            offset.y = y.saturating_sub(height).saturating_add(1);
+        }
+
+        if x < offset.x {
+            offset.x = x;
+        } else if x >= offset.x.saturating_add(width) {
+            offset.x = x.saturating_sub(width).saturating_add(1);
+        }
+    }
+
     fn move_cursor(&mut self, key: Key) {
         let Position { mut x, mut y } = self.cursor_position;
-        let height = self.terminal.size().height.saturating_sub(1) as usize;
+        let height = self.document.len();
         let width = self.terminal.size().width.saturating_sub(1) as usize;
 
         match key {
@@ -74,70 +165,6 @@ impl Editor {
             _ => (),
         }
         self.cursor_position = Position { x, y }
-    }
-
-    fn draw_welcome_message(&self) {
-        let mut welcome_message = format!("Onano editor -- version {VERSION}");
-        let width = self.terminal.size().width as usize;
-        let padding = width.saturating_sub(welcome_message.len()) / 2;
-        let spaces = " ".repeat(padding.saturating_sub(1));
-
-        welcome_message = format!("~{spaces}{welcome_message}");
-        welcome_message.truncate(width);
-
-        println!("{welcome_message}\r");
-    }
-
-    pub fn draw_row(&self, row: &Row) {
-        let start = 0;
-        let end = self.terminal.size().width as usize;
-        let row = row.render(start, end);
-        println!("{row}\r");
-    }
-
-    fn draw_rows(&self) {
-        let height = self.terminal.size().height;
-        for terminal_row in 0..height - 1 {
-            Terminal::clear_current_line();
-            if let Some(row) = self.document.row(terminal_row as usize) {
-                self.draw_row(row);
-            } else if self.document.is_empty() && terminal_row == height / 3 {
-                self.draw_welcome_message();
-            } else {
-                println!("~\r");
-            }
-        }
-    }
-
-    fn refresh_screen(&self) -> Result<(), io::Error> {
-        Terminal::cursor_hide();
-        Terminal::cursor_position(&Position::default());
-        if self.should_quit {
-            Terminal::clear_screen();
-            println!("Goodbye.\r");
-        } else {
-            self.draw_rows();
-            Terminal::cursor_position(&self.cursor_position);
-        }
-        Terminal::cursor_show();
-        Terminal::flush()
-    }
-
-    fn process_keypress(&mut self) -> Result<(), io::Error> {
-        let pressed_key = Terminal::read_key()?;
-        match pressed_key {
-            Key::Ctrl('q') => self.should_quit = true,
-            Key::Up
-            | Key::Down
-            | Key::Left
-            | Key::Right
-            | Key::PageUp
-            | Key::PageDown
-            | Key::End
-            | Key::Home => self.move_cursor(pressed_key),
-            _ => (),
-        }
-        Ok(())
     }
 }
 
