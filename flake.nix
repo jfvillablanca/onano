@@ -11,6 +11,20 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        cargo-pretty-test = pkgs.rustPlatform.buildRustPackage rec {
+          pname = "cargo-pretty-test";
+          version = "v0.2.3";
+          src = pkgs.fetchFromGitHub {
+            owner = "josecelano";
+            repo = "cargo-pretty-test";
+            rev = "main";
+            hash = "sha256-VnnhSgvNfqXLKTYe+Sef9H80+Ym7BBo7Jnfd2eMWF4U=";
+          };
+          cargoLock = {
+            lockFile = src + "/Cargo.lock";
+          };
+          doCheck = false;
+        };
       in
       {
         devShells.default = devenv.lib.mkShell {
@@ -18,6 +32,7 @@
           modules = [
             {
               languages.rust.enable = true;
+              packages = [ cargo-pretty-test ];
             }
           ];
         };
