@@ -75,7 +75,7 @@ impl Editor {
         let height = self.terminal.size().height;
         for terminal_row in 0..height - 1 {
             Terminal::clear_current_line();
-            if let Some(row) = self.document.row(terminal_row as usize + self.offset.y) {
+            if let Some(row) = self.document.get_row(terminal_row as usize + self.offset.y) {
                 self.draw_row(row);
             } else if self.document.is_empty() && terminal_row == height / 3 {
                 self.draw_welcome_message();
@@ -143,7 +143,11 @@ impl Editor {
     fn move_cursor(&mut self, key: Key) {
         let Position { mut x, mut y } = self.cursor_position;
         let height = self.document.len();
-        let width = self.terminal.size().width.saturating_sub(1) as usize;
+        let width = if let Some(row) = self.document.get_row(y) {
+            row.len()
+        } else {
+            0
+        };
 
         match key {
             Key::Up => y = y.saturating_sub(1),
