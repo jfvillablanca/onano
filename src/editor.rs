@@ -1,8 +1,11 @@
 use crate::{Document, Row, Terminal};
 use std::{env, io};
-use termion::event::Key;
+use termion::{color, event::Key};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const STATUSBAR_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
+const STATUSBAR_BG_COLOR: color::Rgb = color::Rgb(239, 239, 239);
 
 #[derive(Default)]
 pub struct Position {
@@ -73,7 +76,7 @@ impl Editor {
 
     fn draw_rows(&self) {
         let height = self.terminal.size().height;
-        for terminal_row in 0..height - 1 {
+        for terminal_row in 0..height {
             Terminal::clear_current_line();
             if let Some(row) = self.document.get_row(terminal_row as usize + self.offset.y) {
                 self.draw_row(row);
@@ -93,6 +96,8 @@ impl Editor {
             println!("Goodbye.\r");
         } else {
             self.draw_rows();
+            self.draw_status_bar();
+            self.draw_message_bar();
             Terminal::cursor_position(&Position {
                 x: self.cursor_position.x.saturating_sub(self.offset.x),
                 y: self.cursor_position.y.saturating_sub(self.offset.y),
@@ -206,6 +211,35 @@ impl Editor {
         }
 
         self.cursor_position = Position { x, y }
+    }
+
+    fn draw_status_bar(&self) {
+        let mut status;
+        let width = self.terminal.size().width as usize;
+        let mut file_name = String::from("[No Name]");
+
+        if let Some(name) = &self.document.file_name {
+            file_name = name.clone();
+            file_name.truncate(20);
+        }
+
+        status = format!("{} - {} lines", file_name, self.document.len());
+
+        if width > status.len() {
+            status.push_str(&" ".repeat(width - status.len()));
+        }
+
+        status.truncate(width);
+
+        Terminal::set_bg_color(STATUSBAR_BG_COLOR);
+        Terminal::set_fg_color(STATUSBAR_FG_COLOR);
+        println!("{status}\r");
+        Terminal::reset_fg_color();
+        Terminal::reset_bg_color();
+    }
+
+    fn draw_message_bar(&self) {
+        Terminal::clear_current_line();
     }
 }
 

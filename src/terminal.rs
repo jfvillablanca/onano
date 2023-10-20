@@ -1,7 +1,7 @@
 use std::io::{self, stdout, Write};
 
 use termion::{
-    clear, cursor,
+    clear, color, cursor,
     event::Key,
     input::TermRead,
     raw::{IntoRawMode, RawTerminal},
@@ -9,6 +9,8 @@ use termion::{
 };
 
 use crate::editor::Position;
+
+const STATUSBAR_HEIGHT: u16 = 2;
 
 pub struct Size {
     pub width: u16,
@@ -25,7 +27,10 @@ impl Terminal {
     pub fn new() -> Result<Self, io::Error> {
         let (width, height) = terminal_size()?;
         Ok(Self {
-            size: Size { width, height },
+            size: Size {
+                width,
+                height: height.saturating_sub(STATUSBAR_HEIGHT),
+            },
             _stdout: stdout().into_raw_mode()?,
         })
     }
@@ -72,5 +77,21 @@ impl Terminal {
                 return key;
             }
         }
+    }
+
+    pub fn set_bg_color(color: color::Rgb) {
+        print!("{}", color::Bg(color));
+    }
+
+    pub fn set_fg_color(color: color::Rgb) {
+        print!("{}", color::Fg(color));
+    }
+
+    pub fn reset_bg_color() {
+        print!("{}", color::Bg(color::Reset));
+    }
+
+    pub fn reset_fg_color() {
+        print!("{}", color::Fg(color::Reset));
     }
 }

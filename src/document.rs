@@ -7,18 +7,22 @@ use std::{
 #[derive(Default)]
 pub struct Document {
     rows: Vec<Row>,
+    pub file_name: Option<String>,
 }
 
 impl Document {
     #[allow(clippy::missing_errors_doc)]
-    pub fn open(filename: &str) -> Result<Self, Error> {
-        let contents = fs::read(filename)?;
+    pub fn open(file_name: &str) -> Result<Self, Error> {
+        let contents = fs::read(file_name)?;
         let mut rows = Vec::new();
         for value in contents.lines() {
             rows.push(Row::from(value.unwrap_or_default()));
         }
 
-        Ok(Self { rows })
+        Ok(Self {
+            rows,
+            file_name: Some(file_name.to_string()),
+        })
     }
 
     #[must_use]
