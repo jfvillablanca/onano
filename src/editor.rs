@@ -214,7 +214,6 @@ impl Editor {
     }
 
     fn draw_status_bar(&self) {
-        let mut status;
         let width = self.terminal.size().width as usize;
         let mut file_name = String::from("[No Name]");
 
@@ -223,17 +222,28 @@ impl Editor {
             file_name.truncate(20);
         }
 
-        status = format!("{} - {} lines", file_name, self.document.len());
+        let filename_indicator = format!("{} - {} lines", file_name, self.document.len());
 
-        if width > status.len() {
-            status.push_str(&" ".repeat(width - status.len()));
-        }
+        let line_indicator = format!(
+            "{}/{}",
+            self.cursor_position.y.saturating_add(1),
+            self.document.len(),
+        );
 
-        status.truncate(width);
+        let nonwhitespace_len = filename_indicator.len() + line_indicator.len();
+
+        let whitespace = if width > nonwhitespace_len {
+            " ".repeat(width - nonwhitespace_len)
+        } else {
+            String::new()
+        };
+
+        let mut statusbar = format!("{filename_indicator}{whitespace}{line_indicator}");
+        statusbar.truncate(width);
 
         Terminal::set_bg_color(STATUSBAR_BG_COLOR);
         Terminal::set_fg_color(STATUSBAR_FG_COLOR);
-        println!("{status}\r");
+        println!("{statusbar}\r");
         Terminal::reset_fg_color();
         Terminal::reset_bg_color();
     }
