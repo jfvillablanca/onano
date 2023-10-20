@@ -164,8 +164,8 @@ impl Editor {
             }
             Key::PageUp => y = 0,
             Key::PageDown => y = height,
-            Key::End => x = 0,
-            Key::Home => x = width,
+            Key::Home => x = 0,
+            Key::End => x = width,
             _ => (),
         }
         self.cursor_position = Position { x, y }
