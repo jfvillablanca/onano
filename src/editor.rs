@@ -302,6 +302,7 @@ impl Editor {
 
     fn draw_status_bar(&self) {
         let width = self.terminal.size().width as usize;
+        let dirty_indicator = if self.document.is_dirty() { " [+]" } else { "" };
         let mut file_name = String::from("[No Name]");
 
         if let Some(name) = &self.document.file_name {
@@ -309,7 +310,12 @@ impl Editor {
             file_name.truncate(20);
         }
 
-        let filename_indicator = format!("{} - {} lines", file_name, self.document.len());
+        let filename_indicator = format!(
+            "{}{} - {} lines",
+            file_name,
+            dirty_indicator,
+            self.document.len()
+        );
 
         let line_indicator = format!(
             "{}/{}",
