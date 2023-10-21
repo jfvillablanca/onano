@@ -25,6 +25,9 @@
           };
           doCheck = false;
         };
+        
+        pname = "onano";
+        version = "0.1.0";
       in
       {
         devShells.default = devenv.lib.mkShell {
@@ -35,6 +38,13 @@
               packages = [ cargo-pretty-test ];
             }
           ];
+        };
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          inherit pname version;
+          src = ./.;
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
         };
       });
 }
