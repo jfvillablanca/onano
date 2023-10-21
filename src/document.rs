@@ -52,11 +52,18 @@ impl Document {
     }
 
     pub fn delete(&mut self, at: &Position) {
-        if at.y >= self.len() {
+        let end_of_document = self.len();
+        let end_of_row = self.rows.get_mut(at.y).unwrap().len();
+        if at.y >= end_of_document {
             return;
         }
-        let row = self.rows.get_mut(at.y).unwrap();
-        row.delete(at.x);
+        if at.x == end_of_row && at.y < end_of_document - 1 {
+            let next_row = self.rows.remove(at.y + 1);
+            let row = self.rows.get_mut(at.y).unwrap();
+            row.append(&next_row);
+        } else {
+            let row = self.rows.get_mut(at.y).unwrap();
+            row.delete(at.x);
+        }
     }
-}
 }
